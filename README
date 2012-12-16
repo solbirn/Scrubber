@@ -1,0 +1,31 @@
+About
+------
+Scrubber in a (quickly thrown together) C# application which will clean your Jump Lists, MRUs (Windows autocomplete entries), and "Recent Files" lists from various programs.
+Compiled with VS 2012 for .NET Framework 4.
+
+Notes: It will *not* delete your jump list, just clean the specific unwanted entries. ClickOnce publishing works.
+
+It is licensed under GPL v2. A copy of the license is included in this repository (see files: LICENSE and COPYING).
+
+Requirements
+-------------
+Windows + .NET Framework.
+It is assembled for .NET Framework 4.0, but it should work fine with versions 3.x-4.x, assuming you change the target framework and recompile...
+
+Run
+----
+Run scrubber.exe, it will prompt you for keyword the first time it is run. Keyword encryption is not coded yet.
+Run "scrubber.exe -s" for only the settings window. You will need this if you enable "AutoClose" and want to change a settings.
+Keywords are case-sensitive.
+You can append keywords as arguments, if you do not wish to save them. (i.e. scrubber.exe private Private personal Personal)
+You can also add keywords to %appdata%\Scrubber\scrubber.kw with "|" as a seperator. (i.e. private|Private|personal|Personal)
+
+TODO
+-----
+-Add encryption for keywords
+-Regex support
+-CLI for settings
+-Proper error-handling/logging
+-More MRU/Recent Files clean up locations
+-Option to choose what to clean
+-General Code Cleanup
