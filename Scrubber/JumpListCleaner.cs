@@ -122,6 +122,7 @@
             catch (Exception e)
             {
                 this.ScrubberGUIInst.DebugPrint(e.ToString());
+                return JumpListDestListEntries;
             }
             return JumpListDestListEntries;
         }
@@ -227,35 +228,44 @@
         }
 
         private void DeleteUnwantedJumpListEntries() {
-            foreach (JumpList JumpListObj in this.JumpListFiles.JumpLists)
+            try
             {
-                foreach (string Keyword in this.KeywordsList)
+                foreach (JumpList JumpListObj in this.JumpListFiles.JumpLists)
                 {
-                    if (JumpListObj.DestListEntry.NetBiosName.Contains(Keyword))
+                    foreach (string Keyword in this.KeywordsList)
                     {
-                        JumpListObj.DestListEntry.PendingDelete = true;
-                    }
-                    else if (JumpListObj.DestListEntry.Data.Contains(Keyword))
-                    {
-                        JumpListObj.DestListEntry.PendingDelete = true;
+                        if (JumpListObj.DestListEntry.NetBiosName.Contains(Keyword))
+                        {
+                            JumpListObj.DestListEntry.PendingDelete = true;
+                        }
+                        else if (JumpListObj.DestListEntry.Data.Contains(Keyword))
+                        {
+                            JumpListObj.DestListEntry.PendingDelete = true;
+                        }
                     }
                 }
-            }
-            byte[] dl2 = this.CreateDestListBinaryFromDestListObj(this.JumpListFiles, true);
+                byte[] dl2 = this.CreateDestListBinaryFromDestListObj(this.JumpListFiles, true);
 
-            CompoundFile JumpListFileCompound = new CompoundFile(this.PathToJumpListFiles, UpdateMode.Update, false, true);
+                CompoundFile JumpListFileCompound = new CompoundFile(this.PathToJumpListFiles, UpdateMode.Update, false, true);
             
-            foreach (JumpList JumpListObj in this.JumpListFiles.JumpLists) 
-            {
-                if (JumpListObj.DestListEntry.PendingDelete) {
-                    this.ScrubberGUIInst.DebugPrint("Scrubbing (JumpList): " + JumpListObj.DestListEntry.Data);
-                    JumpListFileCompound.RootStorage.Delete(JumpListObj.DestListEntry.StreamNo);
+                foreach (JumpList JumpListObj in this.JumpListFiles.JumpLists) 
+                {
+                    if (JumpListObj.DestListEntry.PendingDelete) {
+                        this.ScrubberGUIInst.DebugPrint("Scrubbing (JumpList): " + JumpListObj.DestListEntry.Data);
+                        JumpListFileCompound.RootStorage.Delete(JumpListObj.DestListEntry.StreamNo);
+                    }
                 }
-            }
 
-            JumpListFileCompound.RootStorage.GetStream("DestList").SetData(dl2);
-            JumpListFileCompound.Commit();
-            JumpListFileCompound.Close();
+                JumpListFileCompound.RootStorage.GetStream("DestList").SetData(dl2);
+                JumpListFileCompound.Commit();
+                JumpListFileCompound.Close();
+            }
+            catch (NullReferenceException e)
+            {
+                this.ScrubberGUIInst.DebugPrint("Error (JumpList): List seems empty.");
+                this.ScrubberGUIInst.DebugPrint("Error (JumpList): Details - "+e.Message);
+            }
+            
         }
 
         public static class StreamHelper
