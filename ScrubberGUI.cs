@@ -16,7 +16,7 @@ namespace Scrubber
     public partial class ScrubberGUI : Form
     {
         List<string> keywords;
-        Scrubber.SettingsGUI settings;
+        SettingsGUI settings;
 
         public ScrubberGUI()
         {
@@ -26,7 +26,7 @@ namespace Scrubber
         public ScrubberGUI(List<string> keywords)
         {
             this.keywords = keywords;
-            settings = new Scrubber.SettingsGUI();
+            settings = new SettingsGUI();
 
             InitializeComponent();
         }

@@ -124,12 +124,15 @@
       <DependentUpon>ScrubberGUI.cs</DependentUpon>
     </Compile>
     <Compile Include="Scrubber\ControlExtensions.cs" />
+    <Compile Include="Scrubber\RecentCleaner.cs" />
     <Compile Include="Scrubber\ShellLink.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <DependentUpon>Settings.settings</DependentUpon>
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Scrubber\ThumbsCleaner.cs" />
+    <Compile Include="Scrubber\WindowsSearchCleaner.cs" />
     <Compile Include="SettingsGUI.cs">
       <SubType>Form</SubType>
     </Compile>

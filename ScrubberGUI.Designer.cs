@@ -43,7 +43,7 @@
             this.DebugPrintConsole.Multiline = true;
             this.DebugPrintConsole.Name = "DebugPrintConsole";
             this.DebugPrintConsole.ReadOnly = true;
-            this.DebugPrintConsole.ScrollBars = System.Windows.Forms.ScrollBars.Horizontal;
+            this.DebugPrintConsole.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.DebugPrintConsole.Size = new System.Drawing.Size(1085, 577);
             this.DebugPrintConsole.TabIndex = 0;
             // 

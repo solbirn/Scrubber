@@ -4,7 +4,7 @@
     using System.IO;
     using System.Collections.Generic;
 
-    using OpenMcdf;
+    using OpenMcdf; //TODO: Use custom parser in place of OpenMcdf (needed for Thumbs anyways)
 
     public class JumpListCleaner
     {
@@ -17,17 +17,28 @@
         private JumpListFile JumpListFiles;
         private DestList DestListObj;
         private List<string> KeywordsList;
-        private string PathToJumpListFiles;
+        private string PathToJumpListFile;
 
-        public JumpListCleaner(string PathToJumpListFiles, List<string> KeywordsList, ScrubberGUI ScrubberGUIInst)
+        public JumpListCleaner(string PathToJumpListFile, List<string> KeywordsList, ScrubberGUI ScrubberGUIInst)
         {
-            this.PathToJumpListFiles = PathToJumpListFiles;
+            this.PathToJumpListFile = PathToJumpListFile;
             this.KeywordsList = KeywordsList;
             this.ScrubberGUIInst = ScrubberGUIInst;
 
             this.InitalizeVariables();
 
-            this.ParseJumpList(this.PathToJumpListFiles);
+            if (!this.ParseJumpList(this.PathToJumpListFile))
+            {
+                this.ScrubberGUIInst.DebugPrint("Info (JumpList): Deleting empty JumpList - " + PathToJumpListFile);
+                try
+                {
+                    File.Delete(PathToJumpListFile);
+                }
+                catch (Exception e)
+                {
+                    this.ScrubberGUIInst.DebugPrint("-----\r\nError (JumpList): " + e.Message + "\r\n-----");
+                }
+            }
             this.DeleteUnwantedJumpListEntries();
         }
 
@@ -127,7 +138,7 @@
             return JumpListDestListEntries;
         }
 
-        private void ParseJumpList(string JumpListFilePath)
+        private bool ParseJumpList(string JumpListFilePath)
         {
             this.DestListObj = new DestList();
             JumpListFile JumpListFileObj = new JumpListFile
@@ -140,12 +151,25 @@
             JumpListFileObj.DestListSize = JumpListDestListStream.Size;
             List<DestListEntry> JumpListEntries = this.ParseDestList(JumpListDestListStream.GetData());
             JumpListFileObj.DestListEntries = JumpListEntries;
+            List<DestListEntry> JumpListEntriesToRemove = new List<DestListEntry>();
             foreach (DestListEntry JumpListEntry in JumpListEntries)
             {
                 CFStream JumpListEntryStream = null;
+                bool err = false;
                 try
                 {
-                    JumpListEntryStream = JumpListFileCompound.RootStorage.GetStream(JumpListEntry.StreamNo);
+                    try
+                    {
+                        JumpListEntryStream = JumpListFileCompound.RootStorage.GetStream(JumpListEntry.StreamNo);
+                    }
+                    catch (OpenMcdf.CFItemNotFound e)
+                    {
+                        this.ScrubberGUIInst.DebugPrint("Error (JumpList): List seems empty. List: " + JumpListFilePath + " StreamNo: " + JumpListEntry.StreamNo);
+                        JumpListFileCompound.Close();
+                        JumpListEntriesToRemove.Add(JumpListEntry);
+                        err = true;
+                        continue;
+                    }
                     JumpList JumpListObj = new JumpList
                     {
                         Name = JumpListEntry.StreamNo,
@@ -154,15 +178,29 @@
                     };
                     JumpListFileObj.JumpLists.Add(JumpListObj);
                     this.JumpListFiles = JumpListFileObj;
+                    if (!err)
+                    {
+                        JumpListFileObj.JumpLists.Add(JumpListObj);
+                    }
+                    this.JumpListFiles = JumpListFileObj;
                 }
+                
                 catch (Exception e)
                 {
                     this.ScrubberGUIInst.DebugPrint(e.ToString());
-                    return;
+                    continue;
                 }
+            }JumpListFileCompound.Close();
+            foreach (DestListEntry JumpListEntry in JumpListEntriesToRemove)
+            {
+                JumpListEntries.Remove(JumpListEntry);
+                JumpListFileObj.DestListEntries.Remove(JumpListEntry);
+                //File.Delete(JumpListFilePath);
             }
+            if (JumpListEntries.Count == 0)
+                return false;
             this._jumpListFiles.Add(JumpListFileObj);
-            JumpListFileCompound.Close();
+            return true;
         }
 
         private string ReplaceNulls(string data)
@@ -245,14 +283,37 @@
                     }
                 }
                 byte[] dl2 = this.CreateDestListBinaryFromDestListObj(this.JumpListFiles, true);
+                CompoundFile JumpListFileCompound;
 
-                CompoundFile JumpListFileCompound = new CompoundFile(this.PathToJumpListFiles, UpdateMode.Update, false, true);
+                try
+                {
+                    JumpListFileCompound = new CompoundFile(this.PathToJumpListFile, UpdateMode.Update, false, true);
+                }
+                catch (IOException e)
+                {
+                    this.ScrubberGUIInst.DebugPrint("Error (JumpList): Error opening JumpList database file");
+                    this.ScrubberGUIInst.DebugPrint("Error (JumpList): Details - " + e.Message);
+
+                    return;
+                }
             
                 foreach (JumpList JumpListObj in this.JumpListFiles.JumpLists) 
                 {
                     if (JumpListObj.DestListEntry.PendingDelete) {
-                        this.ScrubberGUIInst.DebugPrint("Scrubbing (JumpList): " + JumpListObj.DestListEntry.Data);
-                        JumpListFileCompound.RootStorage.Delete(JumpListObj.DestListEntry.StreamNo);
+                        try
+                        {
+                            this.ScrubberGUIInst.DebugPrint("Scrubbing (JumpList): " + JumpListObj.DestListEntry.Data);
+                            JumpListFileCompound.RootStorage.Delete(JumpListObj.DestListEntry.StreamNo);
+                        }
+                        catch (NullReferenceException e)
+                        {
+                            //this.ScrubberGUIInst.DebugPrint("Error (JumpList): List seems empty. List: " + JumpListObj.Name);
+                            this.ScrubberGUIInst.DebugPrint("Error (JumpList): Details - " + e.Message);
+                        }
+                        catch (CFItemNotFound e)
+                        {
+                            this.ScrubberGUIInst.DebugPrint("Error (JumpList): Details - " + e.Message);
+                        }
                     }
                 }
 
@@ -262,7 +323,7 @@
             }
             catch (NullReferenceException e)
             {
-                this.ScrubberGUIInst.DebugPrint("Error (JumpList): List seems empty.");
+                //this.ScrubberGUIInst.DebugPrint("Error (JumpList): List seems empty.");
                 this.ScrubberGUIInst.DebugPrint("Error (JumpList): Details - "+e.Message);
             }
             

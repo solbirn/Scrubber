@@ -28,7 +28,7 @@
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Scrubber.SettingsGUI settings = new Scrubber.SettingsGUI();
+            SettingsGUI settings = new SettingsGUI();
 
             List<string> keywords = new List<string>(args);
 
